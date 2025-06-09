@@ -22,8 +22,6 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBasic()
 
 # 모델 정의
-default_image_path = None
-
 class User(Base):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True, index=True)
@@ -56,11 +54,16 @@ class Comment(Base):
     owner = relationship("User", back_populates="comments")
     post = relationship("Post", back_populates="comments")
 
+# FastAPI 앱 설정
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:5174"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "https://board-project-frontend.vercel.app"  # ✅ Vercel 프론트 허용
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -87,6 +90,7 @@ def on_startup():
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# 유틸
 def get_db():
     db = SessionLocal()
     try:
@@ -97,33 +101,27 @@ def get_db():
 def get_current_user(credentials: HTTPBasicCredentials = Depends(security), db=Depends(get_db)):
     user = db.query(User).filter(User.username == credentials.username).first()
     if not user or not pwd_context.verify(credentials.password, user.hashed_password):
-        print(f"[LOGIN FAIL] username={credentials.username}")
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    print(f"[LOGIN SUCCESS] username={credentials.username}")
     return user
 
+# 라우터
 @app.post("/signup")
 def signup(username: str = Form(...), password: str = Form(...), db=Depends(get_db)):
-    print(f"[SIGNUP ATTEMPT] username={username}")
     if db.query(User).filter(User.username == username).first():
-        print(f"[SIGNUP FAIL] username already exists: {username}")
         raise HTTPException(status_code=400, detail="Username already registered")
     user = User(username=username, hashed_password=pwd_context.hash(password))
     db.add(user)
     db.commit()
-    print(f"[SIGNUP SUCCESS] New user registered: '{username}'")
     return {"success": True, "username": user.username}
 
 @app.post("/login")
 def login(credentials: HTTPBasicCredentials = Depends(security), db=Depends(get_db)):
     user = db.query(User).filter(User.username == credentials.username).first()
     valid = user and pwd_context.verify(credentials.password, user.hashed_password)
-    print(f"[LOGIN API] username={credentials.username} result={'SUCCESS' if valid else 'FAIL'}")
     return {"success": bool(valid), "user": {"username": user.username, "is_admin": user.is_admin} if valid else None}
 
 @app.delete("/users/me")
 def delete_me(current: User = Depends(get_current_user), db=Depends(get_db)):
-    print(f"[DELETE ACCOUNT] User '{current.username}' deleted their account")
     db.delete(current)
     db.commit()
     return {"success": True}
@@ -132,7 +130,6 @@ def delete_me(current: User = Depends(get_current_user), db=Depends(get_db)):
 def list_users(current: User = Depends(get_current_user), db=Depends(get_db)):
     if not current.is_admin:
         raise HTTPException(status_code=403, detail="Not authorized")
-    print(f"[ADMIN] User '{current.username}' requested user list")
     users = db.query(User).all()
     return [{"id": u.id, "username": u.username, "is_admin": u.is_admin} for u in users]
 
@@ -143,13 +140,19 @@ def delete_user(user_id: int, current: User = Depends(get_current_user), db=Depe
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    print(f"[ADMIN DELETE USER] User '{current.username}' deleted user ID {user_id}")
     db.delete(user)
     db.commit()
     return {"success": True}
 
 @app.post("/posts")
-def create_post(title: str = Form(...), content: str = Form(...), board: str = Form(...), file: UploadFile = File(None), current: User = Depends(get_current_user), db=Depends(get_db)):
+def create_post(
+    title: str = Form(...),
+    content: str = Form(...),
+    board: str = Form(...),
+    file: UploadFile = File(None),
+    current: User = Depends(get_current_user),
+    db=Depends(get_db)
+):
     image_path = None
     if file:
         path = f"static/{file.filename}"
@@ -160,14 +163,15 @@ def create_post(title: str = Form(...), content: str = Form(...), board: str = F
     db.add(post)
     db.commit()
     db.refresh(post)
-    print(f"[POST CREATED] User '{current.username}' created a post in '{board}' board with title '{title}'")
     return {"id": post.id}
 
 @app.get("/posts")
 def get_posts(board: str, db=Depends(get_db)):
-    print(f"[GET POSTS] Fetching posts from board: '{board}'")
     posts = db.query(Post).filter(Post.board == board).order_by(Post.created_at.desc()).all()
-    return [{"id": p.id, "title": p.title, "author": p.owner.username, "created_at": p.created_at, "views": p.views} for p in posts]
+    return [
+        {"id": p.id, "title": p.title, "author": p.owner.username, "created_at": p.created_at, "views": p.views}
+        for p in posts
+    ]
 
 @app.get("/posts/{post_id}")
 def get_post(post_id: int, db=Depends(get_db)):
@@ -176,8 +180,14 @@ def get_post(post_id: int, db=Depends(get_db)):
         raise HTTPException(status_code=404, detail="Post not found")
     post.views += 1
     db.commit()
-    print(f"[GET POST] Viewed post #{post_id}, updated views to {post.views}")
-    return {"id": post.id, "title": post.title, "content": post.content, "image": post.image_path, "author": post.owner.username, "created_at": post.created_at}
+    return {
+        "id": post.id,
+        "title": post.title,
+        "content": post.content,
+        "image": post.image_path,
+        "author": post.owner.username,
+        "created_at": post.created_at,
+    }
 
 @app.delete("/posts/{post_id}")
 def delete_post(post_id: int, current: User = Depends(get_current_user), db=Depends(get_db)):
@@ -186,7 +196,6 @@ def delete_post(post_id: int, current: User = Depends(get_current_user), db=Depe
         raise HTTPException(status_code=404, detail="Post not found")
     if post.owner_id != current.id and not current.is_admin:
         raise HTTPException(status_code=403, detail="Not authorized")
-    print(f"[POST DELETED] User '{current.username}' deleted post #{post_id}")
     db.delete(post)
     db.commit()
     return {"success": True}
@@ -200,14 +209,15 @@ def add_comment(post_id: int, content: str = Form(...), current: User = Depends(
     db.add(comment)
     db.commit()
     db.refresh(comment)
-    print(f"[COMMENT ADDED] User '{current.username}' commented on post #{post_id}: '{content[:30]}...'")
     return {"id": comment.id}
 
 @app.get("/posts/{post_id}/comments")
 def get_comments(post_id: int, db=Depends(get_db)):
-    print(f"[GET COMMENTS] Fetching comments for post #{post_id}")
     comments = db.query(Comment).filter(Comment.post_id == post_id).order_by(Comment.created_at).all()
-    return [{"id": c.id, "content": c.content, "author": c.owner.username, "created_at": c.created_at} for c in comments]
+    return [
+        {"id": c.id, "content": c.content, "author": c.owner.username, "created_at": c.created_at}
+        for c in comments
+    ]
 
 @app.delete("/comments/{comment_id}")
 def delete_comment(comment_id: int, current: User = Depends(get_current_user), db=Depends(get_db)):
@@ -216,7 +226,6 @@ def delete_comment(comment_id: int, current: User = Depends(get_current_user), d
         raise HTTPException(status_code=404, detail="Comment not found")
     if comment.owner_id != current.id and not current.is_admin:
         raise HTTPException(status_code=403, detail="Not authorized")
-    print(f"[COMMENT DELETED] User '{current.username}' deleted comment #{comment_id}")
     db.delete(comment)
     db.commit()
     return {"success": True}
