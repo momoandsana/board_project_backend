@@ -53,22 +53,20 @@ uvicorn main:app --reload
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
 API 엔드포인트
+	•	POST /signup : 회원가입 (username, password)
+	•	POST /login : 로그인 (HTTP Basic 인증)
+	•	DELETE /users/me : 내 계정 삭제
+	•	GET /admin/users : 전체 사용자 조회 (관리자)
+	•	DELETE /admin/users/{user_id} : 사용자 삭제 (관리자)
+	•	POST /posts : 게시글 생성 (title, content, board, file)
+	•	GET /posts?board={board} : 게시글 목록 조회
+	•	GET /posts/{post_id} : 게시글 상세 조회 (조회수 증가)
+	•	DELETE /posts/{post_id} : 게시글 삭제
+	•	POST /posts/{post_id}/comments : 댓글 작성 (content)
+	•	GET /posts/{post_id}/comments : 댓글 목록 조회
+	•	DELETE /comments/{comment_id} : 댓글 삭제
 
-메서드	경로	설명
-POST	/signup	회원가입 (username, password)
-POST	/login	로그인 (HTTP Basic 인증)
-DELETE	/users/me	내 계정 삭제
-GET	/admin/users	전체 사용자 조회 (관리자)
-DELETE	/admin/users/{user_id}	사용자 삭제 (관리자)
-POST	/posts	게시글 생성 (title, content, board, file)
-GET	/posts?board={board}	게시글 목록 조회
-GET	/posts/{post_id}	게시글 상세 조회 (조회수 증가)
-DELETE	/posts/{post_id}	게시글 삭제
-POST	/posts/{post_id}/comments	댓글 작성 (content)
-GET	/posts/{post_id}/comments	댓글 목록 조회
-DELETE	/comments/{comment_id}	댓글 삭제
-
-정적 파일 제공
+정적 파일 제공## 정적 파일 제공
 	•	업로드된 이미지는 /static/{filename} 경로로 접근 가능합니다.
 
 CORS 설정
