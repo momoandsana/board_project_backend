@@ -50,7 +50,7 @@ This project is a simple bulletin board backend server built with FastAPI and Po
 - `GET /posts/{post_id}/comments` — List comments  
 - `DELETE /comments/{comment_id}` — Delete a comment  
 
-## 📁 Miscellaneous
+## 📁 Additional Information
 
 - Image upload path: `/static/{filename}`  
 - On `main.py` startup, database is initialized and the admin account is created automatically  
