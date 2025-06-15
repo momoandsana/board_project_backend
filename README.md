@@ -1,75 +1,65 @@
-# FastAPI 게시판 백엔드
+# FastAPI Bulletin Board Backend
 
-이 프로젝트는 FastAPI와 PostgreSQL을 기반으로 한 간단한 게시판 백엔드 서버입니다. 회원가입, 로그인, 게시글/댓글 CRUD, 이미지 업로드, 관리자 기능 등을 제공합니다.
+This project is a simple bulletin board backend server built with FastAPI and PostgreSQL. It provides user registration, login, post/comment CRUD, image upload, and admin features.
 
-## 🔧 설치 및 실행
+## 🔧 Installation & Running
 
-```bash
-pip install fastapi uvicorn sqlalchemy psycopg2-binary passlib[bcrypt] python-multipart
-uvicorn main:app --reload
-```
+    pip install fastapi uvicorn sqlalchemy psycopg2-binary passlib[bcrypt] python-multipart
+    uvicorn main:app --reload
 
-## 📌 기본 계정
+## 📌 Default Account
 
-| 아이디 | 비밀번호 | 권한    |
-|--------|----------|---------|
-| admin  | admin    | 관리자 ✅ |
+| Username | Password | Role      |
+|----------|----------|-----------|
+| admin    | admin    | Admin ✅  |
 
-## 🌐 허용된 CORS 출처
+## 🌐 Allowed CORS Origins
 
 - http://localhost:5173
 - http://localhost:5174
 - https://board-project-frontend.vercel.app
 
-## 📦 기술 스택
+## 📦 Tech Stack
 
-- FastAPI
-- SQLAlchemy
-- PostgreSQL (Render 호스팅)
-- Passlib[bcrypt]
-- Uvicorn
-- python-multipart (파일 업로드)
+- FastAPI  
+- SQLAlchemy  
+- PostgreSQL (hosted on Render)  
+- Passlib[bcrypt]  
+- Uvicorn  
+- python-multipart (file upload)
 
-## 🧪 주요 API
+## 🧪 Main API Endpoints
 
-### 🔐 인증
+### 🔐 Authentication
+- `POST /signup` — Register a new user  
+- `POST /login` — Log in  
+- `DELETE /users/me` — Delete my account  
 
-- `POST /signup` - 회원가입
-- `POST /login` - 로그인
-- `DELETE /users/me` - 내 계정 삭제
+### 👤 Admin
+- `GET /admin/users` — Get list of all users  
+- `DELETE /admin/users/{user_id}` — Delete a user  
 
-### 👤 관리자
+### 📝 Posts
+- `POST /posts` — Create a post (image upload supported)  
+- `GET /posts?board=free` — List posts  
+- `GET /posts/{post_id}` — Get post details  
+- `DELETE /posts/{post_id}` — Delete a post  
 
-- `GET /admin/users` - 모든 유저 목록 조회
-- `DELETE /admin/users/{user_id}` - 유저 삭제
+### 💬 Comments
+- `POST /posts/{post_id}/comments` — Create a comment  
+- `GET /posts/{post_id}/comments` — List comments  
+- `DELETE /comments/{comment_id}` — Delete a comment  
 
-### 📝 게시글
+## 📁 Miscellaneous
 
-- `POST /posts` - 게시글 작성 (이미지 업로드 가능)
-- `GET /posts?board=free` - 게시글 목록 조회
-- `GET /posts/{post_id}` - 게시글 상세 보기
-- `DELETE /posts/{post_id}` - 게시글 삭제
+- Image upload path: `/static/{filename}`  
+- On `main.py` startup, database is initialized and the admin account is created automatically  
 
-### 💬 댓글
+## 🗂 requirements.txt
 
-- `POST /posts/{post_id}/comments` - 댓글 작성
-- `GET /posts/{post_id}/comments` - 댓글 목록
-- `DELETE /comments/{comment_id}` - 댓글 삭제
-
-## 📁 기타
-
-- 이미지 업로드 경로: `/static/파일명`
-- `main.py` 실행 시 자동으로 DB 초기화 및 관리자 계정 생성
-
-## 🗂 requirements.txt 내용
-
-```txt
-fastapi
-uvicorn
-sqlalchemy
-psycopg2-binary
-passlib[bcrypt]
-python-multipart
-```
-
----
+    fastapi
+    uvicorn
+    sqlalchemy
+    psycopg2-binary
+    passlib[bcrypt]
+    python-multipart
